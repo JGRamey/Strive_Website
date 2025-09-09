@@ -4,11 +4,13 @@
 
 # Entire Website # 
 
-- 
+- Change all "consultation" buttons to "Schedule Discovery Call"
+
+- Make sure that all "Consultation" wording is removed from the site and the discovery meeting lingo replaces it
 
 # Home Page #
 
-- 
+- Still need to configure the demo preview size on all display sizes - It currently looks really small on my computer monitor
 
 # Solutions Page #
 
@@ -30,11 +32,15 @@
 
 # Contact Page #
 
-- 
+
+
+# Consultation Page #
+
+- Change text color of the text above the text boxes to dark blue (#020a1c)
 
 # Login Page #
 
-- Please make all text color dark blue for the text above each text box
+- Maybe change the gray text on the sign up page?
 
 # Schedule Consultation Page #
 
@@ -49,6 +55,7 @@
 
 
 # Mobile Design List #
+### Look at the full Mobile Update markdown file in the website-update folder
 
 - Make mobile specific design way more mobile centric - example: "What's New with Strive?" section should have a scroll feature where the different cards can be rotate horizontally
 

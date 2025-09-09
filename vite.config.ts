@@ -5,6 +5,11 @@ import path from "path";
 // import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
 export default defineConfig({
+  define: {
+    // Make environment variables available to the client
+    'process.env.SUPABASE_URL': JSON.stringify(process.env.SUPABASE_URL),
+    'process.env.SUPABASE_ANON_KEY': JSON.stringify(process.env.SUPABASE_ANON_KEY),
+  },
   plugins: [
     react(),
     // Temporarily disabled runtime error overlay due to frame property issues

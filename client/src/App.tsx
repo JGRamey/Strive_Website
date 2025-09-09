@@ -28,6 +28,9 @@ const Onboarding = lazy(() => import("@/pages/onboarding"));
 const Request = lazy(() => import("@/pages/request"));
 const Login = lazy(() => import("@/pages/login"));
 const Dashboard = lazy(() => import("@/pages/dashboard"));
+const ClientDashboard = lazy(() => import("@/pages/dashboard/client"));
+const AdminDashboard = lazy(() => import("@/pages/dashboard/admin"));
+const EmployeeDashboard = lazy(() => import("@/pages/dashboard/employee"));
 const Privacy = lazy(() => import("@/pages/privacy"));
 const Terms = lazy(() => import("@/pages/terms"));
 const Cookies = lazy(() => import("@/pages/cookies"));
@@ -69,6 +72,9 @@ function Router() {
             <Route path="/request" component={Request} />
             <Route path="/login" component={Login} />
             <Route path="/dashboard" component={Dashboard} />
+            <Route path="/dashboard/client" component={ClientDashboard} />
+            <Route path="/dashboard/admin" component={AdminDashboard} />
+            <Route path="/dashboard/employee" component={EmployeeDashboard} />
             <Route path="/privacy" component={Privacy} />
             <Route path="/terms" component={Terms} />
             <Route path="/cookies" component={Cookies} />

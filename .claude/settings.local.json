@@ -99,7 +99,8 @@
       "Read(///**)",
       "Bash(fuser:*)",
       "Bash(tree:*)",
-      "Bash(timeout 10 npm run dev)"
+      "Bash(timeout 10 npm run dev)",
+      "mcp__serena__replace_symbol_body"
     ],
     "deny": []
   },

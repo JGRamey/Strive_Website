@@ -1,4 +1,3 @@
-// This file has been migrated to use Supabase Auth while maintaining backwards compatibility
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useAuth as useSupabaseAuth, ProtectedRoute as SupabaseProtectedRoute } from './supabase-auth';
 import type { User as DatabaseUser } from './types/supabase';
