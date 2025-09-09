@@ -22,3 +22,6 @@ Create this sessions chat log please and record full context from this session -
 MCP server setup (put claude into sonnet model):
 Please read this file and only download the Serena MCP server: MCP_SETUP.md
 
+Code review & cleanup:
+
+Please analyze the repo and the current project to fully understand it. In this session I want to focus on making sure the code is clean and that the website page performance is at peak. I want fast load times for all pages and all elements of the website. In doing this, I want to start the session by analyzing every file in the websites code base to see if there's any unused code or code that was forgotten about and wasn't removed. PLEASE MAKE SURE YOU DO A THOROUGH CHECK BEFORE DELETING ANY CODE! I can't stress this enough since it could derail the entire project. Do the due diligence of checking all code and use of the code. Begin by making a complete markdown file of all your findings of the things I just mentioned. Put it here in this folder: chat_logs/website_updates/code-review/performance-optimization-report.md - Here's a list of the current files that are being implemented into the project so they might appear unused or to have no use but PLEASE DO NOT MESS WITH THE CODE OR FILES MENTIONED IN THIS LIST: chat_logs/website_updates/code-review/file-list.md

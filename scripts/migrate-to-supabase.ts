@@ -226,7 +226,8 @@ async function main() {
 }
 
 // Run if this file is executed directly
-if (require.main === module) {
+// Run the script when executed directly (ES module compatible check)
+if (import.meta.url === `file://${process.argv[1]}`) {
   main();
 }
 

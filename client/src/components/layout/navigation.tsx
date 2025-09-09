@@ -301,7 +301,7 @@ const Navigation = () => {
                 </Button>
               </Link>
             ) : (
-              <Link href="/login">
+              <Link href="/auth/login">
                 <Button 
                   variant="ghost"
                   size="sm"

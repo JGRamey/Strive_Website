@@ -27,7 +27,7 @@ const Contact = lazy(() => import("@/pages/contact"));
 const Consultation = lazy(() => import("@/pages/consultation"));
 const Onboarding = lazy(() => import("@/pages/onboarding"));
 const Request = lazy(() => import("@/pages/request"));
-const Login = lazy(() => import("@/pages/login"));
+// Legacy login component removed - using Supabase auth instead
 
 // Authentication pages
 const AuthLogin = lazy(() => import("@/pages/auth/login"));
@@ -79,7 +79,13 @@ function Router() {
             <Route path="/consultation" component={Consultation} />
             <Route path="/onboarding" component={Onboarding} />
             <Route path="/request" component={Request} />
-            <Route path="/login" component={Login} />
+            {/* Legacy login route - redirect to new auth login */}
+            <Route path="/login">
+              {() => {
+                window.location.href = '/auth/login';
+                return null;
+              }}
+            </Route>
             
             {/* Authentication Routes */}
             <Route path="/auth/login" component={AuthLogin} />

@@ -5,6 +5,10 @@
  * This should be run once after setting up the Supabase database
  */
 
+// Load environment variables first
+import * as dotenv from 'dotenv';
+dotenv.config();
+
 import { createUser, masterAdminExists, testDatabaseConnection, logActivity } from '../server/utils/supabase-admin';
 import { supabaseAdmin } from '../server/utils/supabase-admin';
 
@@ -233,7 +237,8 @@ async function runInitialization() {
 }
 
 // Run the initialization
-if (require.main === module) {
+// Run the script when executed directly (ES module compatible check)
+if (import.meta.url === `file://${process.argv[1]}`) {
   runInitialization();
 }
 

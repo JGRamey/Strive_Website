@@ -394,8 +394,5 @@ export async function isResourceOwner(
   }
 }
 
-export {
-  type UserRole,
-  PERMISSIONS_MATRIX,
-  ROLE_HIERARCHY,
-};
+// UserRole type, PERMISSIONS_MATRIX, and ROLE_HIERARCHY are exported individually above
+// No need for duplicate export block

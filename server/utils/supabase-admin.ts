@@ -1,5 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '../../client/src/lib/types/supabase';
+import * as dotenv from 'dotenv';
+
+// Load environment variables if not already loaded (for script execution)
+if (!process.env.SUPABASE_URL) {
+  dotenv.config();
+}
 
 // Server-side Supabase client with service role key (admin access)
 const supabaseUrl = process.env.SUPABASE_URL;

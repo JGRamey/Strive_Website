@@ -104,7 +104,8 @@
       "Bash(timeout 5 npm run dev)",
       "Bash(PORT=5001 timeout 5 npm run dev:*)",
       "Bash(PORT=5001 npm run dev)",
-      "Bash(tail:*)"
+      "Bash(tail:*)",
+      "mcp__serena__find_referencing_symbols"
     ],
     "deny": []
   },

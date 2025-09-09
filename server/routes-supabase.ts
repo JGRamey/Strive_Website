@@ -1,9 +1,50 @@
 import { createServer, type Server } from "http";
 import { z } from "zod";
 import express from "express";
+import rateLimit from "express-rate-limit";
 import { supabaseAdmin, createUser, getUserByEmail, logActivity, logFailedActivity } from "./utils/supabase-admin";
 import { requireRole, requirePermission } from "./utils/permissions";
 import { insertContactSubmissionSchema, insertNewsletterSubscriptionSchema } from "../shared/schema";
+
+// Rate limiting configurations for security
+// These help prevent brute force attacks and API abuse
+
+// Strict rate limiting for authentication endpoints (prevent brute force)
+const authRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes window
+  max: 5, // Maximum 5 attempts per window per IP
+  message: {
+    success: false,
+    message: "Too many authentication attempts. Please try again in 15 minutes.",
+  },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  skipSuccessfulRequests: false, // Count successful requests towards the limit
+});
+
+// Medium rate limiting for general API endpoints
+const apiRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes window
+  max: 100, // Maximum 100 requests per window per IP
+  message: {
+    success: false,
+    message: "Too many requests. Please try again later.",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Loose rate limiting for public endpoints (contact forms, newsletters)
+const publicRateLimit = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour window
+  max: 10, // Maximum 10 submissions per hour per IP
+  message: {
+    success: false,
+    message: "Too many form submissions. Please try again in an hour.",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // Middleware to extract user from Supabase session
 async function extractSupabaseUser(req: any, res: any, next: any) {
@@ -69,7 +110,7 @@ export async function registerRoutes(app: express.Application): Promise<Server> 
   // ==========================================
 
   // Contact form submission
-  app.post("/api/contact", async (req, res) => {
+  app.post("/api/contact", publicRateLimit, async (req, res) => {
     try {
       const validatedData = insertContactSubmissionSchema.parse(req.body);
       
@@ -128,7 +169,7 @@ export async function registerRoutes(app: express.Application): Promise<Server> 
   });
 
   // Newsletter subscription
-  app.post("/api/newsletter", async (req, res) => {
+  app.post("/api/newsletter", publicRateLimit, async (req, res) => {
     try {
       const validatedData = insertNewsletterSubscriptionSchema.parse(req.body);
       
@@ -192,7 +233,7 @@ export async function registerRoutes(app: express.Application): Promise<Server> 
   // ==========================================
 
   // User signup (creates account in Supabase Auth + our database)
-  app.post("/api/auth/signup", async (req, res) => {
+  app.post("/api/auth/signup", authRateLimit, async (req, res) => {
     try {
       const { username, email, password, firstName, lastName } = req.body;
 
@@ -280,7 +321,7 @@ export async function registerRoutes(app: express.Application): Promise<Server> 
   });
 
   // User login (returns JWT token compatible with existing frontend)
-  app.post("/api/auth/login", async (req, res) => {
+  app.post("/api/auth/login", authRateLimit, async (req, res) => {
     try {
       const { username, password } = req.body;
 
@@ -391,7 +432,7 @@ export async function registerRoutes(app: express.Application): Promise<Server> 
   });
 
   // Get current user (protected route)
-  app.get("/api/auth/me", requireAuth, async (req, res) => {
+  app.get("/api/auth/me", apiRateLimit, requireAuth, async (req, res) => {
     try {
       const user = req.user;
 
@@ -593,7 +634,7 @@ export async function registerRoutes(app: express.Application): Promise<Server> 
   // User management endpoints (admin only)
   
   // Get all users (admin only)
-  app.get("/api/users", requireAuth, async (req, res) => {
+  app.get("/api/users", apiRateLimit, requireAuth, async (req, res) => {
     try {
       const user = req.user as any;
       
@@ -819,7 +860,7 @@ export async function registerRoutes(app: express.Application): Promise<Server> 
   });
 
   // Password reset endpoint
-  app.post("/api/auth/reset-password", async (req, res) => {
+  app.post("/api/auth/reset-password", authRateLimit, async (req, res) => {
     try {
       const { email } = req.body;
 
