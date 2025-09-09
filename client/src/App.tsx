@@ -4,7 +4,8 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider } from "@/lib/auth";
+import { AuthProvider } from "@/lib/supabase-auth";
+import { ProtectedRoute } from "@/lib/supabase-auth";
 import ScrollToTop from "@/components/scroll-to-top";
 import PageSkeleton from "@/components/ui/page-skeleton";
 import ErrorBoundary from "@/components/ui/error-boundary";
@@ -27,10 +28,18 @@ const Consultation = lazy(() => import("@/pages/consultation"));
 const Onboarding = lazy(() => import("@/pages/onboarding"));
 const Request = lazy(() => import("@/pages/request"));
 const Login = lazy(() => import("@/pages/login"));
-const Dashboard = lazy(() => import("@/pages/dashboard"));
+
+// Authentication pages
+const AuthLogin = lazy(() => import("@/pages/auth/login"));
+const AuthSignup = lazy(() => import("@/pages/auth/signup"));
+const AuthResetPassword = lazy(() => import("@/pages/auth/reset-password"));
+const AuthVerifyEmail = lazy(() => import("@/pages/auth/verify-email"));
+// Dashboard components with role-based routing
+const Dashboard = lazy(() => import("@/pages/dashboard/index"));
 const ClientDashboard = lazy(() => import("@/pages/dashboard/client"));
 const AdminDashboard = lazy(() => import("@/pages/dashboard/admin"));
 const EmployeeDashboard = lazy(() => import("@/pages/dashboard/employee"));
+const UserManagement = lazy(() => import("@/pages/dashboard/admin/users"));
 const Privacy = lazy(() => import("@/pages/privacy"));
 const Terms = lazy(() => import("@/pages/terms"));
 const Cookies = lazy(() => import("@/pages/cookies"));
@@ -71,10 +80,49 @@ function Router() {
             <Route path="/onboarding" component={Onboarding} />
             <Route path="/request" component={Request} />
             <Route path="/login" component={Login} />
-            <Route path="/dashboard" component={Dashboard} />
-            <Route path="/dashboard/client" component={ClientDashboard} />
-            <Route path="/dashboard/admin" component={AdminDashboard} />
-            <Route path="/dashboard/employee" component={EmployeeDashboard} />
+            
+            {/* Authentication Routes */}
+            <Route path="/auth/login" component={AuthLogin} />
+            <Route path="/auth/signup" component={AuthSignup} />
+            <Route path="/auth/reset-password" component={AuthResetPassword} />
+            <Route path="/auth/verify-email" component={AuthVerifyEmail} />
+            
+            {/* Protected Dashboard Routes */}
+            <Route path="/dashboard">
+              {() => (
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              )}
+            </Route>
+            <Route path="/dashboard/client">
+              {() => (
+                <ProtectedRoute requiredRole="client">
+                  <ClientDashboard />
+                </ProtectedRoute>
+              )}
+            </Route>
+            <Route path="/dashboard/admin">
+              {() => (
+                <ProtectedRoute requiredRole="admin">
+                  <AdminDashboard />
+                </ProtectedRoute>
+              )}
+            </Route>
+            <Route path="/dashboard/employee">
+              {() => (
+                <ProtectedRoute requiredRole="employee">
+                  <EmployeeDashboard />
+                </ProtectedRoute>
+              )}
+            </Route>
+            <Route path="/dashboard/admin/users">
+              {() => (
+                <ProtectedRoute requiredRole="admin">
+                  <UserManagement />
+                </ProtectedRoute>
+              )}
+            </Route>
             <Route path="/privacy" component={Privacy} />
             <Route path="/terms" component={Terms} />
             <Route path="/cookies" component={Cookies} />

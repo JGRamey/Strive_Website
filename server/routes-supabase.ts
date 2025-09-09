@@ -590,6 +590,299 @@ export async function registerRoutes(app: express.Application): Promise<Server> 
     }
   });
 
+  // User management endpoints (admin only)
+  
+  // Get all users (admin only)
+  app.get("/api/users", requireAuth, async (req, res) => {
+    try {
+      const user = req.user as any;
+      
+      // Check if user is admin or master_admin
+      if (user.role !== 'admin' && user.role !== 'master_admin') {
+        res.status(403).json({
+          success: false,
+          message: "Access denied. Admin privileges required."
+        });
+        return;
+      }
+
+      const { data: users, error } = await supabaseAdmin
+        .from('users')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Map users to include is_active flag
+      const mappedUsers = users.map(u => ({
+        ...u,
+        is_active: u.is_active !== false, // Default to true if not set
+      }));
+
+      res.json(mappedUsers);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch users"
+      });
+    }
+  });
+
+  // Update user role (master admin only)
+  app.put("/api/users/:userId/role", requireAuth, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const { userId } = req.params;
+      const { role } = req.body;
+      
+      // Only master admin can change roles
+      if (user.role !== 'master_admin') {
+        res.status(403).json({
+          success: false,
+          message: "Access denied. Only Master Admin can change user roles."
+        });
+        return;
+      }
+
+      // Validate role
+      const validRoles = ['master_admin', 'admin', 'employee', 'client'];
+      if (!validRoles.includes(role)) {
+        res.status(400).json({
+          success: false,
+          message: "Invalid role specified"
+        });
+        return;
+      }
+
+      const { error } = await supabaseAdmin
+        .from('users')
+        .update({ role })
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      // Log the activity
+      await logActivity(
+        user.id,
+        'role_updated',
+        'users',
+        userId,
+        { new_role: role },
+        req.ip,
+        req.get('User-Agent')
+      );
+
+      res.json({
+        success: true,
+        message: "User role updated successfully"
+      });
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to update user role"
+      });
+    }
+  });
+
+  // Update user status (admin only)
+  app.put("/api/users/:userId/status", requireAuth, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const { userId } = req.params;
+      const { is_active } = req.body;
+      
+      // Check if user is admin or master_admin
+      if (user.role !== 'admin' && user.role !== 'master_admin') {
+        res.status(403).json({
+          success: false,
+          message: "Access denied. Admin privileges required."
+        });
+        return;
+      }
+
+      const { error } = await supabaseAdmin
+        .from('users')
+        .update({ is_active })
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      // Log the activity
+      await logActivity(
+        user.id,
+        is_active ? 'user_activated' : 'user_deactivated',
+        'users',
+        userId,
+        { is_active },
+        req.ip,
+        req.get('User-Agent')
+      );
+
+      res.json({
+        success: true,
+        message: `User ${is_active ? 'activated' : 'deactivated'} successfully`
+      });
+    } catch (error) {
+      console.error('Error updating user status:', error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to update user status"
+      });
+    }
+  });
+
+  // Get user activity logs (admin only)
+  app.get("/api/users/:userId/activity", requireAuth, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const { userId } = req.params;
+      
+      // Check if user is admin or master_admin
+      if (user.role !== 'admin' && user.role !== 'master_admin') {
+        res.status(403).json({
+          success: false,
+          message: "Access denied. Admin privileges required."
+        });
+        return;
+      }
+
+      const { data: activities, error } = await supabaseAdmin
+        .from('activity_logs')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (error) throw error;
+
+      res.json(activities || []);
+    } catch (error) {
+      console.error('Error fetching user activity:', error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch user activity"
+      });
+    }
+  });
+
+  // Resend verification email (admin only)
+  app.post("/api/users/:userId/resend-verification", requireAuth, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const { userId } = req.params;
+      
+      // Check if user is admin or master_admin
+      if (user.role !== 'admin' && user.role !== 'master_admin') {
+        res.status(403).json({
+          success: false,
+          message: "Access denied. Admin privileges required."
+        });
+        return;
+      }
+
+      // Get user email
+      const { data: targetUser, error: userError } = await supabaseAdmin
+        .from('users')
+        .select('email')
+        .eq('id', userId)
+        .single();
+
+      if (userError || !targetUser) {
+        res.status(404).json({
+          success: false,
+          message: "User not found"
+        });
+        return;
+      }
+
+      // Resend verification email using Supabase Auth Admin
+      const { error } = await supabaseAdmin.auth.admin.generateLink({
+        type: 'signup',
+        email: targetUser.email,
+      });
+
+      if (error) throw error;
+
+      res.json({
+        success: true,
+        message: "Verification email sent successfully"
+      });
+    } catch (error) {
+      console.error('Error resending verification email:', error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to send verification email"
+      });
+    }
+  });
+
+  // Password reset endpoint
+  app.post("/api/auth/reset-password", async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        res.status(400).json({
+          success: false,
+          message: "Email is required"
+        });
+        return;
+      }
+
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${process.env.APP_URL || 'http://localhost:5173'}/auth/verify-email`,
+      });
+
+      if (error) throw error;
+
+      res.json({
+        success: true,
+        message: "Password reset email sent successfully"
+      });
+    } catch (error) {
+      console.error('Error sending password reset email:', error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to send password reset email"
+      });
+    }
+  });
+
+  // Email verification endpoint
+  app.post("/api/auth/verify-email", async (req, res) => {
+    try {
+      const { token } = req.body;
+
+      if (!token) {
+        res.status(400).json({
+          success: false,
+          message: "Verification token is required"
+        });
+        return;
+      }
+
+      const { error } = await supabase.auth.verifyOtp({
+        token_hash: token,
+        type: 'email',
+      });
+
+      if (error) throw error;
+
+      res.json({
+        success: true,
+        message: "Email verified successfully"
+      });
+    } catch (error) {
+      console.error('Error verifying email:', error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to verify email"
+      });
+    }
+  });
+
   // Health check endpoint
   app.get("/api/health", (req, res) => {
     res.json({ 

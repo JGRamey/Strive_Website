@@ -4,6 +4,13 @@
  * Checks for all required environment variables for Phase 1 Supabase implementation
  */
 
+// Load environment variables from .env file
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+
+// Load .env file from project root
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+
 interface EnvCheck {
   variable: string;
   required: boolean;

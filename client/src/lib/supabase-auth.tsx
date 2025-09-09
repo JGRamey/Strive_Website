@@ -12,6 +12,15 @@ export interface AuthState {
   error: AuthError | null;
 }
 
+// Helper to create AuthError objects
+const createAuthError = (message: string, code: string = 'AUTH_ERROR'): AuthError => ({
+  name: 'AuthError',
+  message,
+  code,
+  status: 400,
+  __isAuthError: true
+} as unknown as AuthError);
+
 // Authentication hook with enhanced functionality
 export function useAuth() {
   const [state, setState] = useState<AuthState>({
@@ -19,11 +28,13 @@ export function useAuth() {
     userProfile: null,
     session: null,
     loading: !supabase, // If no supabase, not loading
-    error: !supabase ? new Error('Supabase not configured') : null,
+    error: !supabase ? { name: 'AuthError', message: 'Supabase not configured', code: 'SUPABASE_NOT_CONFIGURED', status: 500, __isAuthError: true } as unknown as AuthError : null,
   });
 
   // Fetch user profile from database
   const fetchUserProfile = useCallback(async (userId: string): Promise<DatabaseUser | null> => {
+    if (!supabase) return null;
+    
     try {
       const { data, error } = await supabase
         .from('users')
@@ -142,7 +153,7 @@ export function useAuth() {
     }
   ) => {
     if (!supabase) {
-      const error = new Error('Supabase not configured');
+      const error = createAuthError('Supabase not configured', 'SUPABASE_NOT_CONFIGURED');
       setState(prev => ({ ...prev, error, loading: false }));
       return { user: null, error };
     }
@@ -204,7 +215,7 @@ export function useAuth() {
   // Sign in function
   const signIn = useCallback(async (email: string, password: string) => {
     if (!supabase) {
-      const error = new Error('Supabase not configured');
+      const error = createAuthError('Supabase not configured', 'SUPABASE_NOT_CONFIGURED');
       setState(prev => ({ ...prev, error, loading: false }));
       return { user: null, error };
     }
@@ -242,7 +253,7 @@ export function useAuth() {
   // Sign out function
   const signOut = useCallback(async () => {
     if (!supabase) {
-      const error = new Error('Supabase not configured');
+      const error = createAuthError('Supabase not configured', 'SUPABASE_NOT_CONFIGURED');
       return { error };
     }
 
@@ -323,6 +334,7 @@ export function useAuth() {
   return {
     // State
     ...state,
+    state, // Explicitly expose state for components that need it
     
     // Auth actions
     signUp,
@@ -439,4 +451,9 @@ export const canAccessResource = (
   return userPermissions.includes('*') || 
          userPermissions.includes(permissionKey) ||
          userPermissions.includes(`${resourceType}.*`);
+};
+
+// Export AuthProvider as a wrapper around the context
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return <>{children}</>;
 };

@@ -1,7 +1,13 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { applySecurity } from "./middleware/security";
+import * as dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
+
+// Check if Supabase is configured
+const useSupabase = !!(process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 const app = express();
 
@@ -45,6 +51,24 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Dynamically import the appropriate routes
+  let registerRoutes: any;
+  if (useSupabase) {
+    try {
+      const supabaseRoutes = await import("./routes-supabase");
+      registerRoutes = supabaseRoutes.registerRoutes;
+      console.log("✅ Using Supabase authentication system");
+    } catch (error) {
+      console.warn("⚠️ Supabase routes not available, falling back to legacy routes");
+      const legacyRoutes = await import("./routes");
+      registerRoutes = legacyRoutes.registerRoutes;
+    }
+  } else {
+    const legacyRoutes = await import("./routes");
+    registerRoutes = legacyRoutes.registerRoutes;
+    console.log("ℹ️ Using legacy Passport authentication system");
+  }
+  
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

@@ -1,9 +1,19 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, User, LogOut } from "lucide-react";
+import { Menu, User, LogOut, Shield, Users, Briefcase, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useAuth } from "@/lib/auth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/lib/supabase-auth";
 import { useToast } from "@/hooks/use-toast";
 import LazyImage from "@/components/ui/lazy-image";
 import logoImage from "@assets/STRIVE_Orange_Text_Transparent_1483 x 320px.png";
@@ -21,12 +31,15 @@ const Navigation = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   // Navbar always shows gradient - no scroll detection needed
   // Removed dropdown state - simplified navigation
-  const { user, isAuthenticated, logout } = useAuth();
+  const { state, signOut, isAuthenticated, userRole } = useAuth();
   const { toast } = useToast();
+  
+  const user = state.profile;
+  const username = user?.username || user?.full_name || 'User';
 
   const handleLogout = async () => {
     try {
-      await logout();
+      await signOut();
       toast({
         title: "Logged out",
         description: "You have been successfully logged out.",
@@ -37,6 +50,37 @@ const Navigation = () => {
         description: error.message || "Failed to logout",
         variant: "destructive",
       });
+    }
+  };
+  
+  // Get role icon and color
+  const getRoleInfo = () => {
+    switch (userRole) {
+      case 'master_admin':
+        return { icon: Shield, color: 'text-red-500', label: 'Master Admin', badgeColor: 'bg-red-500' };
+      case 'admin':
+        return { icon: Shield, color: 'text-orange-500', label: 'Admin', badgeColor: 'bg-orange-500' };
+      case 'employee':
+        return { icon: Briefcase, color: 'text-blue-500', label: 'Employee', badgeColor: 'bg-blue-500' };
+      case 'client':
+      default:
+        return { icon: Users, color: 'text-green-500', label: 'Client', badgeColor: 'bg-green-500' };
+    }
+  };
+  
+  const roleInfo = getRoleInfo();
+  
+  // Get dashboard path based on role
+  const getDashboardPath = () => {
+    switch (userRole) {
+      case 'master_admin':
+      case 'admin':
+        return '/dashboard/admin';
+      case 'employee':
+        return '/dashboard/employee';
+      case 'client':
+      default:
+        return '/dashboard/client';
     }
   };
 
@@ -159,7 +203,15 @@ const Navigation = () => {
                   <div className="space-y-3 mt-8 pt-6 border-t border-white/20">
                     {isAuthenticated ? (
                       <>
-                        <Link href="/dashboard">
+                        <div className="px-4 py-2">
+                          <p className="text-sm text-gray-400">Signed in as</p>
+                          <p className="text-white font-medium">{username}</p>
+                          <Badge className={`${roleInfo.badgeColor} text-white mt-2`}>
+                            <roleInfo.icon className="mr-1 h-3 w-3" />
+                            {roleInfo.label}
+                          </Badge>
+                        </div>
+                        <Link href={getDashboardPath()}>
                           <Button 
                             variant="ghost"
                             className="w-full bg-white/10 text-white hover:bg-primary hover:text-white transition-all duration-300 rounded-xl"
@@ -170,6 +222,19 @@ const Navigation = () => {
                             Dashboard
                           </Button>
                         </Link>
+                        {(userRole === 'master_admin' || userRole === 'admin') && (
+                          <Link href="/dashboard/admin/users">
+                            <Button 
+                              variant="ghost"
+                              className="w-full bg-white/10 text-white hover:bg-primary hover:text-white transition-all duration-300 rounded-xl"
+                              data-testid="mobile-button-manage-users"
+                              onClick={() => setMobileMenuOpen(false)}
+                            >
+                              <Users className="mr-2 h-4 w-4" />
+                              Manage Users
+                            </Button>
+                          </Link>
+                        )}
                         <Button 
                           variant="outline"
                           className="w-full bg-white/10 text-white hover:bg-red-500 hover:text-white transition-all duration-300 rounded-xl"
@@ -185,7 +250,7 @@ const Navigation = () => {
                       </>
                     ) : (
                       <>
-                        <Link href="/login">
+                        <Link href="/auth/login">
                           <Button 
                             variant="ghost"
                             className="w-full bg-white/10 text-white hover:bg-primary hover:text-white transition-all duration-300 rounded-xl"
@@ -195,7 +260,7 @@ const Navigation = () => {
                             Login
                           </Button>
                         </Link>
-                        <Link href="/request">
+                        <Link href="/auth/signup">
                           <Button 
                             className="w-full bg-primary text-white hover:bg-primary/90 transition-all duration-300 rounded-xl shadow-lg"
                             data-testid="mobile-button-get-started"
@@ -332,30 +397,66 @@ const Navigation = () => {
           {/* Desktop Auth Section */}
           <div className="hidden md:flex items-center space-x-4">
             {isAuthenticated ? (
-              <>
-                <Link href="/dashboard">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
                   <Button 
                     variant="ghost"
-                    className="text-foreground hover:text-primary hover:bg-transparent"
-                    data-testid="button-dashboard"
+                    className="flex items-center space-x-2 text-foreground hover:text-primary hover:bg-transparent"
+                    data-testid="button-user-menu"
                   >
-                    <User className="mr-2 h-4 w-4" />
-                    {user?.username || 'Dashboard'}
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user?.avatar_url} />
+                      <AvatarFallback className="bg-gray-700 text-white">
+                        {username.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="max-w-[150px] truncate">{username}</span>
+                    <ChevronDown className="h-4 w-4" />
                   </Button>
-                </Link>
-                <Button 
-                  variant="outline"
-                  onClick={handleLogout}
-                  className="text-foreground hover:text-primary"
-                  data-testid="button-logout"
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Logout
-                </Button>
-              </>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 bg-gray-900 border-gray-800">
+                  <DropdownMenuLabel className="text-gray-300">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">{username}</p>
+                      <p className="text-xs leading-none text-gray-500">{user?.email}</p>
+                      <Badge className={`${roleInfo.badgeColor} text-white mt-2 w-fit`}>
+                        <roleInfo.icon className="mr-1 h-3 w-3" />
+                        {roleInfo.label}
+                      </Badge>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-gray-800" />
+                  
+                  <DropdownMenuItem asChild>
+                    <Link href={getDashboardPath()} className="cursor-pointer text-gray-300 hover:text-white">
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Dashboard</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  
+                  {(userRole === 'master_admin' || userRole === 'admin') && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard/admin/users" className="cursor-pointer text-gray-300 hover:text-white">
+                        <Users className="mr-2 h-4 w-4" />
+                        <span>Manage Users</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  
+                  <DropdownMenuSeparator className="bg-gray-800" />
+                  
+                  <DropdownMenuItem 
+                    onClick={handleLogout}
+                    className="cursor-pointer text-red-400 hover:text-red-300 focus:text-red-300"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Logout</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : (
               <>
-                <Link href="/login">
+                <Link href="/auth/login">
                   <Button 
                     variant="ghost"
                     className="text-foreground hover:text-primary hover:bg-transparent"
@@ -364,7 +465,7 @@ const Navigation = () => {
                     Login
                   </Button>
                 </Link>
-                <Link href="/request">
+                <Link href="/auth/signup">
                   <Button 
                     className="bg-primary text-primary-foreground hover:bg-primary/90"
                     data-testid="button-get-started"

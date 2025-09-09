@@ -100,7 +100,11 @@
       "Bash(fuser:*)",
       "Bash(tree:*)",
       "Bash(timeout 10 npm run dev)",
-      "mcp__serena__replace_symbol_body"
+      "mcp__serena__replace_symbol_body",
+      "Bash(timeout 5 npm run dev)",
+      "Bash(PORT=5001 timeout 5 npm run dev:*)",
+      "Bash(PORT=5001 npm run dev)",
+      "Bash(tail:*)"
     ],
     "deny": []
   },
